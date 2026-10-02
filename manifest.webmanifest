@@ -29,23 +29,4 @@
       "purpose": "any"
     }
   ]
-}{
-  "id": "./",
-  "name": "Aayush Ji Calculator",
-  "short_name": "Aayush Ji",
-  "description": "A simple, free calculator that works online or offline.",
-  "start_url": "./",
-  "scope": "./",
-  "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#e8eee5",
-  "theme_color": "#e8eee5",
-  "icons": [
-    {
-      "src": "./icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ]
 }
