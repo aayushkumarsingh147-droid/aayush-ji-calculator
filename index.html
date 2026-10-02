@@ -570,8 +570,15 @@
       return Object.is(normalized, -0) ? '0' : String(normalized);
     }
 
+    function cleanTrigValue(value) {
+      if (Math.abs(value) < 1e-12) return 0;
+      if (Math.abs(value - 1) < 1e-12) return 1;
+      if (Math.abs(value + 1) < 1e-12) return -1;
+      return value;
+    }
+
     function tokenize(input) {
-      const tokens = input.match(/(?:\d+\.?\d*|\.\d+)|(?:asin|acos|atan|sqrt|sin|cos|tan|ln|log|abs|exp)|pi|[πe()+\-*/^%!]/g) || [];
+      const tokens = input.match(/(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?|(?:asin|acos|atan|sqrt|sin|cos|tan|ln|log|abs|exp)|pi|[πe()+\-*/^%!]/g) || [];
       if (tokens.join('') !== input) throw new Error('Invalid expression');
       return tokens;
     }
@@ -595,9 +602,12 @@
           if (tokens[position++] !== ')') throw new Error('Missing closing parenthesis');
           let value;
           const radians = angleMode === 'DEG' ? argument.value * Math.PI / 180 : argument.value;
-          if (token === 'sin') value = Math.sin(radians);
-          else if (token === 'cos') value = Math.cos(radians);
-          else if (token === 'tan') value = Math.tan(radians);
+          if (token === 'sin') value = cleanTrigValue(Math.sin(radians));
+          else if (token === 'cos') value = cleanTrigValue(Math.cos(radians));
+          else if (token === 'tan') {
+            if (Math.abs(Math.cos(radians)) < 1e-12) throw new Error('Tangent is undefined for this angle');
+            value = cleanTrigValue(Math.tan(radians));
+          }
           else if (token === 'asin') value = Math.asin(argument.value);
           else if (token === 'acos') value = Math.acos(argument.value);
           else if (token === 'atan') value = Math.atan(argument.value);
@@ -704,7 +714,7 @@
     }
 
     function currentNumberStart() {
-      const match = expression.match(/(?:\d+\.?\d*|\.\d+)$/);
+      const match = expression.match(/(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/);
       return match ? expression.length - match[0].length : expression.length;
     }
 
@@ -805,6 +815,11 @@
     function toggleSign() {
       if (hasError) expression = '';
       hasError = false;
+      if (justEvaluated) {
+        expression = formatNumber(-calculate(expression));
+        render();
+        return;
+      }
       justEvaluated = false;
       if (!expression) {
         expression = '-';
