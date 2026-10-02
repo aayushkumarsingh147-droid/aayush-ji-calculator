@@ -233,6 +233,65 @@
       background: #f0efe7;
     }
 
+    .mode-row, .scientific-keys { grid-column: 1 / -1; }
+
+    .mode-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .mode-switch {
+      display: inline-grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+      padding: 3px;
+      border-radius: 6px;
+      background: #e5e9dc;
+    }
+
+    .mode-button {
+      height: 31px;
+      padding: 0 12px;
+      border-radius: 4px;
+      background: transparent;
+      box-shadow: none;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .mode-button[aria-pressed="true"] {
+      color: var(--moss-dark);
+      background: var(--paper);
+      box-shadow: 0 1px 3px rgba(42, 48, 39, .12);
+    }
+
+    .angle-mode {
+      height: 31px;
+      padding: 0 10px;
+      border-color: rgba(57, 91, 67, .18);
+      color: var(--moss-dark);
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .scientific-keys {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .scientific-keys[hidden], .angle-mode[hidden] { display: none; }
+
+    .scientific-keys button {
+      height: 42px;
+      color: var(--moss-dark);
+      background: #e5e9dc;
+      font-size: 15px;
+      font-weight: 650;
+    }
+
     button {
       min-width: 0;
       height: 61px;
@@ -407,6 +466,35 @@
           </section>
 
           <section class="keypad" aria-label="Calculator keypad">
+            <div class="mode-row">
+              <div class="mode-switch" role="group" aria-label="Calculator mode">
+                <button class="mode-button" type="button" data-mode="basic" aria-pressed="true">Basic</button>
+                <button class="mode-button" type="button" data-mode="scientific" aria-pressed="false">Scientific</button>
+              </div>
+              <button class="angle-mode" id="angle-mode" type="button" data-action="angle-mode" aria-label="Angle unit: degrees. Switch to radians" hidden>DEG</button>
+            </div>
+            <div class="scientific-keys" id="scientific-keys" aria-label="Scientific operations" hidden>
+              <button type="button" data-function="sin">sin</button>
+              <button type="button" data-function="cos">cos</button>
+              <button type="button" data-function="tan">tan</button>
+              <button type="button" data-function="asin">sin⁻¹</button>
+              <button type="button" data-function="acos">cos⁻¹</button>
+              <button type="button" data-function="atan">tan⁻¹</button>
+              <button type="button" data-function="sqrt" aria-label="Square root">√</button>
+              <button type="button" data-function="ln">ln</button>
+              <button type="button" data-function="log">log</button>
+              <button type="button" data-function="exp">eˣ</button>
+              <button type="button" data-function="abs" aria-label="Absolute value">|x|</button>
+              <button type="button" data-action="square" aria-label="Square">x²</button>
+              <button type="button" data-value="^" aria-label="Power">xʸ</button>
+              <button type="button" data-action="reciprocal" aria-label="Reciprocal">1/x</button>
+              <button type="button" data-action="factorial" aria-label="Factorial">n!</button>
+              <button type="button" data-value="π" aria-label="Pi">π</button>
+              <button type="button" data-value="e" aria-label="Euler's number">e</button>
+              <button type="button" data-value="(">(</button>
+              <button type="button" data-value=")">)</button>
+            </div>
+
             <button class="utility clear" type="button" data-action="clear" aria-label="Clear all">AC</button>
             <button class="utility" type="button" data-action="sign" aria-label="Toggle sign">+/−</button>
             <button class="utility" type="button" data-action="percent" aria-label="Percent">%</button>
@@ -465,11 +553,16 @@
     const expressionView = document.querySelector('#expression');
     const resultView = document.querySelector('#result');
     const keypad = document.querySelector('.keypad');
+    const scientificKeys = document.querySelector('#scientific-keys');
+    const angleModeButton = document.querySelector('#angle-mode');
+    const footerLabel = document.querySelector('.footer span');
     let expression = '';
     let justEvaluated = false;
     let hasError = false;
+    let scientificMode = false;
 
-    const isOperator = (character) => ['+', '-', '*', '/'].includes(character);
+    const isOperator = (character) => ['+', '-', '*', '/', '^'].includes(character);
+    let angleMode = 'DEG';
 
     function formatNumber(value) {
       if (!Number.isFinite(value)) throw new Error('Invalid result');
@@ -478,7 +571,7 @@
     }
 
     function tokenize(input) {
-      const tokens = input.match(/(?:\d+\.?\d*|\.\d+)|[+*/%\-]/g) || [];
+      const tokens = input.match(/(?:\d+\.?\d*|\.\d+)|(?:asin|acos|atan|sqrt|sin|cos|tan|ln|log|abs|exp)|pi|[πe()+\-*/^%!]/g) || [];
       if (tokens.join('') !== input) throw new Error('Invalid expression');
       return tokens;
     }
@@ -486,45 +579,105 @@
     function calculate(input) {
       const tokens = tokenize(input);
       let position = 0;
+      const functions = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'ln', 'log', 'abs', 'exp'];
 
       function parsePrimary() {
         const token = tokens[position++];
+        if (token === '(') {
+          const value = parseSum();
+          if (tokens[position++] !== ')') throw new Error('Missing closing parenthesis');
+          return value;
+        }
+
+        if (functions.includes(token)) {
+          if (tokens[position++] !== '(') throw new Error('Function requires parentheses');
+          const argument = parseSum();
+          if (tokens[position++] !== ')') throw new Error('Missing closing parenthesis');
+          let value;
+          const radians = angleMode === 'DEG' ? argument.value * Math.PI / 180 : argument.value;
+          if (token === 'sin') value = Math.sin(radians);
+          else if (token === 'cos') value = Math.cos(radians);
+          else if (token === 'tan') value = Math.tan(radians);
+          else if (token === 'asin') value = Math.asin(argument.value);
+          else if (token === 'acos') value = Math.acos(argument.value);
+          else if (token === 'atan') value = Math.atan(argument.value);
+          else if (token === 'sqrt') value = Math.sqrt(argument.value);
+          else if (token === 'ln') value = Math.log(argument.value);
+          else if (token === 'log') value = Math.log10(argument.value);
+          else if (token === 'abs') value = Math.abs(argument.value);
+          else value = Math.exp(argument.value);
+          if (['asin', 'acos', 'atan'].includes(token) && angleMode === 'DEG') value *= 180 / Math.PI;
+          return { value, percent: false };
+        }
+
+        if (token === 'π' || token === 'pi') return { value: Math.PI, percent: false };
+        if (token === 'e') return { value: Math.E, percent: false };
+        if (!token || token === ')' || isOperator(token) || token === '%' || token === '!') throw new Error('Incomplete expression');
+        const value = Number(token);
+        if (!Number.isFinite(value)) throw new Error('Invalid number');
+        return { value, percent: false };
+      }
+
+      function parsePostfix() {
+        let result = parsePrimary();
+        while (tokens[position] === '%' || tokens[position] === '!') {
+          const postfix = tokens[position++];
+          if (postfix === '%') {
+            result = { value: result.value / 100, percent: true };
+          } else {
+            if (!Number.isInteger(result.value) || result.value < 0 || result.value > 170) throw new Error('Factorial requires an integer from 0 to 170');
+            let factorial = 1;
+            for (let factor = 2; factor <= result.value; factor++) factorial *= factor;
+            result = { value: factorial, percent: false };
+          }
+        }
+        return result;
+      }
+
+      function parseUnary() {
+        const token = tokens[position];
         if (token === '+' || token === '-') {
-          const value = parsePrimary();
-          return token === '-' ? -value : value;
-        }
-        if (!token || isOperator(token) || token === '%') throw new Error('Incomplete expression');
-        let value = Number(token);
-        while (tokens[position] === '%') {
           position++;
-          value /= 100;
+          const result = parseUnary();
+          return { value: token === '-' ? -result.value : result.value, percent: result.percent };
         }
-        return value;
+        return parsePower();
+      }
+
+      function parsePower() {
+        const left = parsePostfix();
+        if (tokens[position] === '^') {
+          position++;
+          const right = parseUnary();
+          return { value: Math.pow(left.value, right.value), percent: false };
+        }
+        return left;
       }
 
       function parseProduct() {
-        let value = parsePrimary();
+        let result = parseUnary();
         while (tokens[position] === '*' || tokens[position] === '/') {
           const operator = tokens[position++];
-          const right = parsePrimary();
-          value = operator === '*' ? value * right : value / right;
+          const right = parseUnary();
+          result = { value: operator === '*' ? result.value * right.value : result.value / right.value, percent: false };
         }
-        return value;
+        return result;
       }
 
       function parseSum() {
-        let value = parseProduct();
+        let result = parseProduct();
         while (tokens[position] === '+' || tokens[position] === '-') {
           const operator = tokens[position++];
           const right = parseProduct();
-          value = operator === '+' ? value + right : value - right;
+          const amount = right.percent ? result.value * right.value : right.value;
+          result = { value: operator === '+' ? result.value + amount : result.value - amount, percent: false };
         }
-        return value;
+        return result;
       }
 
-      const value = parseSum();
+      const result = parseSum();
       if (position !== tokens.length) throw new Error('Invalid expression');
-      return value;
+      return result.value;
     }
 
     function prettyExpression(input) {
@@ -551,10 +704,12 @@
     }
 
     function currentNumberStart() {
-      let index = expression.length - 1;
-      while (index >= 0 && !isOperator(expression[index]) && expression[index] !== '%') index--;
-      if (index >= 0 && expression[index] === '-' && (index === 0 || isOperator(expression[index - 1]))) index--;
-      return index + 1;
+      const match = expression.match(/(?:\d+\.?\d*|\.\d+)$/);
+      return match ? expression.length - match[0].length : expression.length;
+    }
+
+    function endsWithOperand() {
+      return /[\dπe)%!]$/.test(expression);
     }
 
     function enterDigit(digit) {
@@ -562,11 +717,13 @@
       hasError = false;
       justEvaluated = false;
       if (digit === '.') {
+        if (expression && /[)πe!]$/.test(expression)) expression += '*';
         const start = currentNumberStart();
         const current = expression.slice(start);
         if (current.includes('.') || expression.endsWith('%')) return;
         expression += current ? '.' : '0.';
       } else {
+        if (expression && /[)πe%!]$/.test(expression)) expression += '*';
         const start = currentNumberStart();
         if (expression.slice(start) === '0') expression = expression.slice(0, start) + digit;
         else expression += digit;
@@ -586,9 +743,96 @@
         return;
       }
       if (expression.endsWith('.')) expression = expression.slice(0, -1);
-      if (isOperator(expression.at(-1))) expression = expression.slice(0, -1);
-      if (expression.endsWith('%') || /\d$/.test(expression)) expression += operator;
+      if (isOperator(expression.at(-1))) {
+        if (operator === '-' && expression.at(-1) !== '-') expression += '-';
+        else expression = expression.slice(0, -1) + operator;
+      } else if (endsWithOperand()) {
+        expression += operator;
+      }
       render();
+    }
+
+    function enterToken(token) {
+      if (hasError || (justEvaluated && token !== ')')) expression = '';
+      hasError = false;
+      justEvaluated = false;
+      if (token === '(') {
+        if (endsWithOperand()) expression += '*';
+        expression += '(';
+      } else if (token === ')') {
+        const opens = (expression.match(/\(/g) || []).length;
+        const closes = (expression.match(/\)/g) || []).length;
+        if (opens > closes && endsWithOperand()) expression += ')';
+      } else {
+        if (endsWithOperand()) expression += '*';
+        expression += token;
+      }
+      render();
+    }
+
+    function applyFunction(name) {
+      if (hasError) expression = '';
+      hasError = false;
+      justEvaluated = false;
+      if (!expression || isOperator(expression.at(-1)) || expression.endsWith('(')) expression += name + '(';
+      else expression = name + '(' + expression + ')';
+      render();
+    }
+
+    function applySquare() {
+      if (!expression || isOperator(expression.at(-1)) || expression.endsWith('(')) return;
+      expression = '(' + expression + ')^2';
+      justEvaluated = false;
+      render();
+    }
+
+    function applyReciprocal() {
+      if (hasError) expression = '';
+      hasError = false;
+      justEvaluated = false;
+      if (!expression || isOperator(expression.at(-1)) || expression.endsWith('(')) expression += '1/(';
+      else expression = '1/(' + expression + ')';
+      render();
+    }
+
+    function applyFactorial() {
+      if (!endsWithOperand()) return;
+      expression += '!';
+      justEvaluated = false;
+      render();
+    }
+
+    function toggleSign() {
+      if (hasError) expression = '';
+      hasError = false;
+      justEvaluated = false;
+      if (!expression) {
+        expression = '-';
+      } else if (isOperator(expression.at(-1)) || expression.endsWith('(')) {
+        const last = expression.at(-1);
+        const previous = expression.at(-2);
+        if (last === '-' && (expression.length === 1 || isOperator(previous) || previous === '(')) expression = expression.slice(0, -1);
+        else expression += '-';
+      } else if (/\d$/.test(expression)) {
+        const start = currentNumberStart();
+        const prefix = expression.slice(0, start);
+        const current = expression.slice(start);
+        if (prefix.endsWith('-') && (prefix.length === 1 || isOperator(prefix.at(-2)) || prefix.at(-2) === '(')) expression = prefix.slice(0, -1) + current;
+        else expression = prefix + '-' + current;
+      } else {
+        expression = '-(' + expression + ')';
+      }
+      render();
+    }
+
+    function setMode(mode) {
+      scientificMode = mode === 'scientific';
+      scientificKeys.hidden = !scientificMode;
+      angleModeButton.hidden = !scientificMode;
+      document.querySelectorAll('[data-mode]').forEach((button) => {
+        button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
+      });
+      footerLabel.textContent = scientificMode ? 'Scientific operations' : 'Basic arithmetic';
     }
 
     function runAction(action) {
@@ -608,21 +852,26 @@
         enterDigit('.');
         return;
       } else if (action === 'sign') {
-        if (hasError) {
-          expression = '';
-          hasError = false;
-        }
-        if (justEvaluated) justEvaluated = false;
-        if (!expression || isOperator(expression.at(-1))) expression += '-';
-        else {
-          const start = currentNumberStart();
-          const current = expression.slice(start);
-          if (current.startsWith('-')) expression = expression.slice(0, start) + current.slice(1);
-          else expression = expression.slice(0, start) + '-' + current;
-        }
+        toggleSign();
+        return;
       } else if (action === 'percent') {
-        if (expression && /\d$/.test(expression)) expression += '%';
+        if (endsWithOperand() && !expression.endsWith('%')) expression += '%';
         justEvaluated = false;
+      } else if (action === 'square') {
+        applySquare();
+        return;
+      } else if (action === 'reciprocal') {
+        applyReciprocal();
+        return;
+      } else if (action === 'factorial') {
+        applyFactorial();
+        return;
+      } else if (action === 'angle-mode') {
+        angleMode = angleMode === 'DEG' ? 'RAD' : 'DEG';
+        angleModeButton.textContent = angleMode;
+        angleModeButton.setAttribute('aria-label', 'Angle unit: ' + (angleMode === 'DEG' ? 'degrees' : 'radians') + '. Switch to ' + (angleMode === 'DEG' ? 'radians' : 'degrees'));
+        render();
+        return;
       } else if (action === 'equals') {
         if (!expression || isOperator(expression.at(-1))) return;
         try {
@@ -645,10 +894,23 @@
     keypad.addEventListener('click', (event) => {
       const button = event.target.closest('button');
       if (!button) return;
-      if (button.dataset.value !== undefined) {
+      if (button.dataset.mode) {
+        setMode(button.dataset.mode);
+      } else if (button.dataset.function) {
+        applyFunction(button.dataset.function);
+      } else if (button.dataset.value !== undefined) {
         if (/^\d$/.test(button.dataset.value)) enterDigit(button.dataset.value);
-        else enterOperator(button.dataset.value);
+        else if (isOperator(button.dataset.value)) enterOperator(button.dataset.value);
+        else enterToken(button.dataset.value);
       } else {
+        if (button.dataset.action === 'angle-mode') {
+          runAction(button.dataset.action);
+          return;
+        }
+        if (button.dataset.action === 'function') {
+          applyFunction(button.dataset.function);
+          return;
+        }
         runAction(button.dataset.action);
       }
     });
@@ -656,7 +918,9 @@
     document.addEventListener('keydown', (event) => {
       if (/^\d$/.test(event.key)) enterDigit(event.key);
       else if (event.key === '.' || event.key === ',') enterDigit('.');
-      else if (['+', '-', '*', '/'].includes(event.key)) enterOperator(event.key);
+      else if (['+', '-', '*', '/', '^'].includes(event.key)) enterOperator(event.key);
+      else if (event.key === '(' || event.key === ')') enterToken(event.key);
+      else if (event.key === '!') runAction('factorial');
       else if (event.key === '%') runAction('percent');
       else if (event.key === 'Enter' || event.key === '=') runAction('equals');
       else if (event.key === 'Backspace') runAction('delete');
