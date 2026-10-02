@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#e8eee5">
+  <meta name="description" content="Aayush Ji Calculator is a simple, free calculator for your computer and phone. Install it or download a version that works offline.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <title>Aayush Ji Calculator</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f7f6ef;
+      --ink: #20251f;
+      --muted: #7e847a;
+      --line: #e8e7dd;
+      --moss: #395b43;
+      --moss-dark: #2b4734;
+      --lime: #d8e68c;
+      --coral: #db7558;
+      --canvas: #e8eee5;
+      --shadow: 0 24px 70px rgba(36, 54, 39, .13), 0 3px 10px rgba(36, 54, 39, .06);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      color: var(--ink);
+      background-color: var(--canvas);
+      background-image: radial-gradient(rgba(57, 91, 67, .10) .75px, transparent .75px);
+      background-size: 17px 17px;
+      font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+    }
+
+    .site-shell {
+      width: min(100%, 1120px);
+      margin: 0 auto;
+      padding: 0 38px;
+    }
+
+    .site-header {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(57, 91, 67, .16);
+    }
+
+    .site-brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .brand-mark {
+      width: 31px;
+      height: 31px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      color: var(--paper);
+      background: var(--moss);
+      font-family: Georgia, serif;
+      font-size: 17px;
+      font-weight: 400;
+    }
+
+    .offline-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--moss-dark);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .offline-label::before {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #6c9b5e;
+      content: "";
+    }
+
+    .masthead {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 376px;
+      align-items: center;
+      gap: 64px;
+      padding: 54px 0 58px;
+    }
+
+    .intro { max-width: 530px; }
+
+    .eyebrow {
+      margin: 0 0 16px;
+      color: var(--coral);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 52px;
+      font-weight: 400;
+      line-height: 1.05;
+    }
+
+    .intro-copy {
+      max-width: 420px;
+      margin: 19px 0 25px;
+      color: #62695f;
+      font-size: 16px;
+      line-height: 1.65;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px 20px;
+    }
+
+    .install-button {
+      min-height: 45px;
+      padding: 0 17px;
+      border: 0;
+      border-radius: 6px;
+      color: white;
+      background: var(--moss);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .install-button:hover { background: #456c50; }
+    .install-button:focus-visible, .download-link:focus-visible { outline: 3px solid rgba(57, 91, 67, .4); outline-offset: 3px; }
+
+    .download-link {
+      color: var(--moss-dark);
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration-color: rgba(43, 71, 52, .35);
+      text-underline-offset: 4px;
+    }
+
+    .download-link:hover { text-decoration-color: currentColor; }
+    .tool { width: 100%; }
+
+    .calculator {
+      width: min(100%, 376px);
+      overflow: hidden;
+      border: 1px solid rgba(57, 91, 67, .12);
+      border-radius: 12px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      animation: arrive .5s cubic-bezier(.2, .75, .25, 1) both;
+    }
+
+    @keyframes arrive {
+      from { opacity: 0; transform: translateY(12px) scale(.99); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px 15px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .edition {
+      color: var(--muted);
+      font-family: Georgia, serif;
+      font-size: 12px;
+      font-style: italic;
+    }
+
+    .screen {
+      min-height: 172px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: flex-end;
+      padding: 22px 25px 25px;
+      overflow: hidden;
+    }
+
+    .expression {
+      width: 100%;
+      min-height: 22px;
+      overflow: hidden;
+      color: var(--muted);
+      font-family: Georgia, serif;
+      font-size: 16px;
+      text-align: right;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .result {
+      width: 100%;
+      margin-top: 8px;
+      overflow: hidden;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(42px, 13vw, 58px);
+      font-variant-numeric: lining-nums tabular-nums;
+      line-height: 1.1;
+      text-align: right;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 9px;
+      padding: 17px;
+      border-top: 1px solid var(--line);
+      background: #f0efe7;
+    }
+
+    button {
+      min-width: 0;
+      height: 61px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      color: var(--ink);
+      background: var(--paper);
+      box-shadow: 0 2px 0 rgba(42, 48, 39, .07);
+      cursor: pointer;
+      font: inherit;
+      font-size: 21px;
+      font-variant-numeric: tabular-nums;
+      transition: transform .12s ease, background-color .12s ease, box-shadow .12s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:hover { background: #fff; box-shadow: 0 3px 0 rgba(42, 48, 39, .09); }
+    button:active { transform: translateY(2px); box-shadow: none; }
+    button:focus-visible { outline: 3px solid rgba(57, 91, 67, .35); outline-offset: 2px; }
+
+    button.utility {
+      color: var(--moss);
+      background: #e5e9dc;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    button.operator {
+      color: var(--moss-dark);
+      background: #e1e8dc;
+      font-size: 24px;
+    }
+
+    button.equals {
+      color: #fff;
+      background: var(--moss);
+      box-shadow: 0 2px 0 #203a28;
+      font-size: 25px;
+    }
+
+    button.equals:hover { background: #456c50; }
+    button.zero { grid-column: span 2; text-align: left; padding-left: 25px; }
+    button.clear { color: #a14e39; background: #f1e2d9; }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      padding: 0 22px 15px;
+      color: #92958c;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+    }
+
+    .platforms {
+      padding: 26px 0 44px;
+      border-top: 1px solid rgba(57, 91, 67, .18);
+    }
+
+    .platform-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 22px;
+    }
+
+    .platform-heading h2 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 25px;
+      font-weight: 400;
+    }
+
+    .platform-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border-top: 1px solid rgba(57, 91, 67, .15);
+    }
+
+    .platform-item {
+      padding: 17px 24px 0 0;
+    }
+
+    .platform-item + .platform-item {
+      padding-left: 24px;
+      border-left: 1px solid rgba(57, 91, 67, .15);
+    }
+
+    .platform-item h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .platform-item p {
+      margin: 0;
+      color: #62695f;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .site-footer {
+      padding: 16px 0 22px;
+      border-top: 1px solid rgba(57, 91, 67, .16);
+      color: #747b70;
+      font-size: 11px;
+    }
+
+    @media (max-width: 380px) {
+      .keypad { gap: 7px; padding: 13px; }
+      button { height: 58px; }
+    }
+
+    @media (max-width: 760px) {
+      .site-shell { padding: 0 22px; }
+      .masthead { grid-template-columns: minmax(0, 1fr); gap: 32px; padding: 38px 0 39px; }
+      .intro { max-width: 560px; }
+      .tool { width: min(100%, 420px); margin: 0 auto; }
+      h1 { font-size: 44px; }
+    }
+
+    @media (max-width: 520px) {
+      .site-shell { padding: 0 17px; }
+      .site-header { min-height: 65px; }
+      .offline-label { font-size: 11px; }
+      .masthead { gap: 27px; padding: 34px 0 32px; }
+      h1 { font-size: 39px; }
+      .intro-copy { margin: 14px 0 20px; font-size: 15px; }
+      .platform-heading { align-items: flex-start; flex-direction: column; gap: 9px; }
+      .platform-heading h2 { font-size: 23px; }
+      .platform-grid { grid-template-columns: 1fr; }
+      .platform-item, .platform-item + .platform-item { padding: 15px 0; border-left: 0; border-bottom: 1px solid rgba(57, 91, 67, .15); }
+      .platform-item:last-child { border-bottom: 0; }
+      .platforms { padding-bottom: 25px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="site-shell">
+    <header class="site-header">
+      <div class="site-brand"><span class="brand-mark" aria-hidden="true">A</span> Aayush Ji Calculator</div>
+      <span class="offline-label">Free · Works offline</span>
+    </header>
+
+    <section class="masthead" aria-labelledby="page-title">
+      <div class="intro">
+        <p class="eyebrow">A little tool for everyday sums</p>
+        <h1 id="page-title">Aayush Ji Calculator</h1>
+        <p class="intro-copy">Clear, quick calculations on the device you already use. Install it for easy access, or download the standalone file to keep it offline.</p>
+        <div class="actions">
+          <button class="install-button" id="install-button" type="button" hidden>Install app</button>
+          <a class="download-link" href="./index.html" download="Aayush-Ji-Calculator.html">Download for offline use ↓</a>
+        </div>
+      </div>
+
+      <div class="tool">
+        <section class="calculator" aria-label="Calculator">
+          <header class="topbar">
+            <div class="site-brand"><span class="brand-mark" aria-hidden="true">A</span> Calculator</div>
+            <span class="edition">No. 01 / Utility</span>
+          </header>
+
+          <section class="screen" aria-live="polite" aria-atomic="true">
+            <div class="expression" id="expression" aria-label="Expression">&nbsp;</div>
+            <output class="result" id="result" aria-label="Display">0</output>
+          </section>
+
+          <section class="keypad" aria-label="Calculator keypad">
+            <button class="utility clear" type="button" data-action="clear" aria-label="Clear all">AC</button>
+            <button class="utility" type="button" data-action="sign" aria-label="Toggle sign">+/−</button>
+            <button class="utility" type="button" data-action="percent" aria-label="Percent">%</button>
+            <button class="operator" type="button" data-value="/" aria-label="Divide">÷</button>
+
+            <button type="button" data-value="7">7</button>
+            <button type="button" data-value="8">8</button>
+            <button type="button" data-value="9">9</button>
+            <button class="operator" type="button" data-value="*" aria-label="Multiply">×</button>
+
+            <button type="button" data-value="4">4</button>
+            <button type="button" data-value="5">5</button>
+            <button type="button" data-value="6">6</button>
+            <button class="operator" type="button" data-value="-" aria-label="Subtract">−</button>
+
+            <button type="button" data-value="1">1</button>
+            <button type="button" data-value="2">2</button>
+            <button type="button" data-value="3">3</button>
+            <button class="operator" type="button" data-value="+" aria-label="Add">+</button>
+
+            <button class="utility" type="button" data-action="delete" aria-label="Delete last digit">⌫</button>
+            <button class="zero" type="button" data-value="0">0</button>
+            <button type="button" data-action="decimal" aria-label="Decimal point">.</button>
+            <button class="equals" type="button" data-action="equals" aria-label="Equals">=</button>
+          </section>
+          <footer class="footer"><span>Basic arithmetic</span><span>Keyboard ready</span></footer>
+        </section>
+      </div>
+    </section>
+
+    <section class="platforms" aria-labelledby="platform-title">
+      <div class="platform-heading">
+        <h2 id="platform-title">Take it with you</h2>
+        <a class="download-link" href="./index.html" download="Aayush-Ji-Calculator.html">Get the standalone calculator</a>
+      </div>
+      <div class="platform-grid">
+        <article class="platform-item">
+          <h3>Windows</h3>
+          <p>Open this site in Edge or Chrome and choose the install icon in the address bar. Or download the HTML file and open it any time.</p>
+        </article>
+        <article class="platform-item">
+          <h3>Android</h3>
+          <p>Open this site in Chrome, tap the menu, then choose “Install app” or “Add to Home screen.”</p>
+        </article>
+        <article class="platform-item">
+          <h3>iPhone &amp; iPad</h3>
+          <p>Open this site in Safari, tap Share, then choose “Add to Home Screen.” The standalone HTML download also works offline in a browser.</p>
+        </article>
+      </div>
+    </section>
+
+    <footer class="site-footer">Aayush Ji Calculator · Free to use · No account required</footer>
+  </main>
+
+  <script>
+    const expressionView = document.querySelector('#expression');
+    const resultView = document.querySelector('#result');
+    const keypad = document.querySelector('.keypad');
+    let expression = '';
+    let justEvaluated = false;
+    let hasError = false;
+
+    const isOperator = (character) => ['+', '-', '*', '/'].includes(character);
+
+    function formatNumber(value) {
+      if (!Number.isFinite(value)) throw new Error('Invalid result');
+      const normalized = Number.parseFloat(value.toPrecision(11));
+      return Object.is(normalized, -0) ? '0' : String(normalized);
+    }
+
+    function tokenize(input) {
+      const tokens = input.match(/(?:\d+\.?\d*|\.\d+)|[+*/%\-]/g) || [];
+      if (tokens.join('') !== input) throw new Error('Invalid expression');
+      return tokens;
+    }
+
+    function calculate(input) {
+      const tokens = tokenize(input);
+      let position = 0;
+
+      function parsePrimary() {
+        const token = tokens[position++];
+        if (token === '+' || token === '-') {
+          const value = parsePrimary();
+          return token === '-' ? -value : value;
+        }
+        if (!token || isOperator(token) || token === '%') throw new Error('Incomplete expression');
+        let value = Number(token);
+        while (tokens[position] === '%') {
+          position++;
+          value /= 100;
+        }
+        return value;
+      }
+
+      function parseProduct() {
+        let value = parsePrimary();
+        while (tokens[position] === '*' || tokens[position] === '/') {
+          const operator = tokens[position++];
+          const right = parsePrimary();
+          value = operator === '*' ? value * right : value / right;
+        }
+        return value;
+      }
+
+      function parseSum() {
+        let value = parseProduct();
+        while (tokens[position] === '+' || tokens[position] === '-') {
+          const operator = tokens[position++];
+          const right = parseProduct();
+          value = operator === '+' ? value + right : value - right;
+        }
+        return value;
+      }
+
+      const value = parseSum();
+      if (position !== tokens.length) throw new Error('Invalid expression');
+      return value;
+    }
+
+    function prettyExpression(input) {
+      return input.replaceAll('*', '×').replaceAll('/', '÷').replaceAll('-', '−');
+    }
+
+    function render() {
+      if (!expression) {
+        expressionView.innerHTML = '&nbsp;';
+        resultView.textContent = hasError ? 'Error' : '0';
+        return;
+      }
+      expressionView.textContent = prettyExpression(expression);
+      try {
+        const tokens = tokenize(expression);
+        if (!tokens.length || isOperator(tokens[tokens.length - 1]) || tokens[tokens.length - 1] === '.') {
+          resultView.textContent = '…';
+          return;
+        }
+        resultView.textContent = formatNumber(calculate(expression));
+      } catch {
+        resultView.textContent = '…';
+      }
+    }
+
+    function currentNumberStart() {
+      let index = expression.length - 1;
+      while (index >= 0 && !isOperator(expression[index]) && expression[index] !== '%') index--;
+      if (index >= 0 && expression[index] === '-' && (index === 0 || isOperator(expression[index - 1]))) index--;
+      return index + 1;
+    }
+
+    function enterDigit(digit) {
+      if (hasError || (justEvaluated && !isOperator(digit))) expression = '';
+      hasError = false;
+      justEvaluated = false;
+      if (digit === '.') {
+        const start = currentNumberStart();
+        const current = expression.slice(start);
+        if (current.includes('.') || expression.endsWith('%')) return;
+        expression += current ? '.' : '0.';
+      } else {
+        const start = currentNumberStart();
+        if (expression.slice(start) === '0') expression = expression.slice(0, start) + digit;
+        else expression += digit;
+      }
+      render();
+    }
+
+    function enterOperator(operator) {
+      if (hasError) {
+        expression = '';
+        hasError = false;
+      }
+      if (justEvaluated) justEvaluated = false;
+      if (!expression) {
+        if (operator === '-') expression = '-';
+        render();
+        return;
+      }
+      if (expression.endsWith('.')) expression = expression.slice(0, -1);
+      if (isOperator(expression.at(-1))) expression = expression.slice(0, -1);
+      if (expression.endsWith('%') || /\d$/.test(expression)) expression += operator;
+      render();
+    }
+
+    function runAction(action) {
+      if (action === 'clear') {
+        expression = '';
+        hasError = false;
+        justEvaluated = false;
+      } else if (action === 'delete') {
+        if (hasError || justEvaluated) {
+          expression = '';
+          hasError = false;
+          justEvaluated = false;
+        } else {
+          expression = expression.slice(0, -1);
+        }
+      } else if (action === 'decimal') {
+        enterDigit('.');
+        return;
+      } else if (action === 'sign') {
+        if (hasError) {
+          expression = '';
+          hasError = false;
+        }
+        if (justEvaluated) justEvaluated = false;
+        if (!expression || isOperator(expression.at(-1))) expression += '-';
+        else {
+          const start = currentNumberStart();
+          const current = expression.slice(start);
+          if (current.startsWith('-')) expression = expression.slice(0, start) + current.slice(1);
+          else expression = expression.slice(0, start) + '-' + current;
+        }
+      } else if (action === 'percent') {
+        if (expression && /\d$/.test(expression)) expression += '%';
+        justEvaluated = false;
+      } else if (action === 'equals') {
+        if (!expression || isOperator(expression.at(-1))) return;
+        try {
+          const value = formatNumber(calculate(expression));
+          expressionView.textContent = prettyExpression(expression) + ' =';
+          resultView.textContent = value;
+          expression = value;
+          justEvaluated = true;
+          hasError = false;
+          return;
+        } catch {
+          expression = '';
+          hasError = true;
+          justEvaluated = false;
+        }
+      }
+      render();
+    }
+
+    keypad.addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      if (button.dataset.value !== undefined) {
+        if (/^\d$/.test(button.dataset.value)) enterDigit(button.dataset.value);
+        else enterOperator(button.dataset.value);
+      } else {
+        runAction(button.dataset.action);
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (/^\d$/.test(event.key)) enterDigit(event.key);
+      else if (event.key === '.' || event.key === ',') enterDigit('.');
+      else if (['+', '-', '*', '/'].includes(event.key)) enterOperator(event.key);
+      else if (event.key === '%') runAction('percent');
+      else if (event.key === 'Enter' || event.key === '=') runAction('equals');
+      else if (event.key === 'Backspace') runAction('delete');
+      else if (event.key === 'Escape' || event.key === 'Delete') runAction('clear');
+      else return;
+      event.preventDefault();
+    });
+
+    let installPrompt;
+    const installButton = document.querySelector('#install-button');
+
+    window.addEventListener('beforeinstallprompt', (event) => {
+      event.preventDefault();
+      installPrompt = event;
+      installButton.hidden = false;
+    });
+
+    installButton.addEventListener('click', async () => {
+      if (!installPrompt) return;
+      installPrompt.prompt();
+      await installPrompt.userChoice;
+      installPrompt = null;
+      installButton.hidden = true;
+    });
+
+    window.addEventListener('appinstalled', () => {
+      installButton.hidden = true;
+      installPrompt = null;
+    });
+
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
